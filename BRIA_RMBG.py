@@ -5,9 +5,9 @@ from PIL import Image
 from .briarmbg import BriaRMBG
 from torchvision.transforms.functional import normalize
 import numpy as np
+from comfy.model_management import get_torch_device
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def tensor2pil(image):
     return Image.fromarray(np.clip(255. * image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8))
@@ -41,8 +41,8 @@ class BRIA_RMBG_ModelLoader_Zho:
     def load_model(self):
         net = BriaRMBG()
         model_path = os.path.join(current_directory, "RMBG-1.4/model.pth")
-        net.load_state_dict(torch.load(model_path, map_location=device))
-        net.to(device)
+        net.load_state_dict(torch.load(model_path, map_location=get_torch_device()))
+        net.to(get_torch_device())
         net.eval() 
         return [net]
 
@@ -78,8 +78,7 @@ class BRIA_RMBG_Zho:
             im_tensor = torch.unsqueeze(im_tensor,0)
             im_tensor = torch.divide(im_tensor,255.0)
             im_tensor = normalize(im_tensor,[0.5,0.5,0.5],[1.0,1.0,1.0])
-            if torch.cuda.is_available():
-                im_tensor=im_tensor.cuda()
+            im_tensor = im_tensor.to(get_torch_device())
 
             result=rmbgmodel(im_tensor)
             result = torch.squeeze(F.interpolate(result[0][0], size=(h,w), mode='bilinear') ,0)
